@@ -31,6 +31,7 @@ class tbw_metric_exporter(object):
         g.add_metric(["atomic"], self.cfg.atomic)
         g.add_metric(["payout_interval_block"], self.cfg.tbw_interval)
         g.add_metric(["payout_voter_share"], self.cfg.tbw_voter_share)
+        g.add_metric(["payout_delegate_share"], self.cfg.tbw_delegate_share)
 
         return g
 

@@ -1,3 +1,4 @@
+import re
 from os import path
 from dotenv import dotenv_values
 
@@ -12,8 +13,10 @@ class load_config:
     def _load_tbw_cfg(self, tbw_cfg_path):
         tbw_config = dotenv_values(tbw_cfg_path)
         self.atomic = int(tbw_config.get("ATOMIC"))
-        #        self.network = tbw_config.get('network')
         self.tbw_voter_share = float(tbw_config.get("VOTER_SHARE"))
+        self.tbw_delegate_share = sum(
+            [float(i) for i in re.split(":|,", tbw_config.get("KEEP"))[1::2]]
+        )
         self.tbw_interval = int(tbw_config.get("INTERVAL"))
         self.delegate = tbw_config.get("DELEGATE")
 

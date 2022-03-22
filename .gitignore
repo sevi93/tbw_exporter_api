@@ -1,0 +1,12 @@
+# config
+src/config/config
+
+# pycache files
+*.pyc
+src/util/__pycache__/
+src/network/__pycache__/
+src/config/__pycache__/
+
+# emacs
+*~
+#*
