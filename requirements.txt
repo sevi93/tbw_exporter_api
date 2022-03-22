@@ -1,0 +1,5 @@
+prometheus-client==0.13.0
+python-dotenv
+psycopg2
+arkecosystem-client
+arkecosystem-crypto

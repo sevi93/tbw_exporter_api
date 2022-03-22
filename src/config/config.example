@@ -1,0 +1,11 @@
+# exporter
+EXPORTER_PORT = 9104
+EXPORTER_ADDR = "0.0.0.0"
+
+# tbw 
+TBW_DB_PATH = "${HOME}/core2_tbw/solar_testnet_delegate.db"
+TBW_CFG_PATH = "${HOME}/core2_tbw/core/config/config"
+
+# core api
+CORE_API_PORT = "6003"
+CORE_API_ADDR = "127.0.0.1"

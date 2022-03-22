@@ -1,0 +1,12 @@
+{
+    "apps": [{
+        "name": "tbw_exporter_api",
+        "script": "src/exporter_api.py",
+        "instances": 1,
+        "exec_mode": "fork",
+	"autorestart": false,
+        "exec_interpreter": "python3",
+        "log_date_format": "YYYY-MM-DD HH:mm Z",
+	"interpreter_args": "-u"
+    },]
+}
