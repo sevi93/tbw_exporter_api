@@ -23,9 +23,9 @@ class tbwdb:
     def staged_payout(self):
         return self.cursor.execute(f"SELECT sum(payamt) FROM staging")
 
-    def processed_transactions(self):
+    def processed_transactions(self, last='100'):
         return self.cursor.execute(
-            f"SELECT address,amount,processed_at FROM transactions ORDER BY processed_at DESC LIMIT 100"
+            f"SELECT address,amount,processed_at FROM transactions ORDER BY processed_at DESC LIMIT {last}"
         )
 
     def delegate_total_rewards(self):

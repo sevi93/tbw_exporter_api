@@ -41,6 +41,7 @@ class tbw_metric_exporter(object):
         yield (self._collect_voters())
         yield (self._collect_network())
         yield (self._collect_token())
+        yield (self._collect_transactions())
 
     def _collect_config(self):
         g = GaugeMetricFamily("tbw_config", "Tbw config parameters", labels=["param"])
@@ -99,8 +100,7 @@ class tbw_metric_exporter(object):
                     and self.tbwdb.voters_total_rewards().fetchall()[0][0] != None
                 ](),
             )
-        except Exception as m:
-            print(m)
+        except:
             return g.add_metric(["error"], 1)
 
         return g
@@ -247,5 +247,22 @@ class tbw_metric_exporter(object):
             g.add_metric(["price"], self.token_price)
         else:
             return g.add_metric(["error"], 1)
+
+        return g
+
+    def _collect_transactions(self):
+        g = GaugeMetricFamily(
+            "tbw_transactions", "transactions", labels=["address", "datetime"]
+        )
+
+        try:
+            self.transactions = self.tbwdb.processed_transactions().fetchall()
+            if len(self.transactions):
+                for transaction in self.transactions:
+                    g.add_metric([transaction[0], transaction[2]], float(transaction[1]) / self.cfg.atomic)
+            else:
+                return g.add_metric(['0', '0'], 0)
+        except:
+            return g.add_metric(['error'], 1)
 
         return g
