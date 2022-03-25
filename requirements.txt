@@ -1,4 +1,5 @@
 prometheus-client==0.13.0
+pycoingecko==2.2.0
 python-dotenv
 psycopg2
 arkecosystem-client

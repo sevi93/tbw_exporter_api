@@ -26,3 +26,5 @@ class load_config:
         self.tbw_db_path = config.get("TBW_DB_PATH")
         self.core_api_port = int(config.get("CORE_API_PORT"))
         self.core_api_addr = config.get("CORE_API_ADDR")
+        self.cg_token_id = config.get("COINGECKO_TOKEN_ID")
+        self.cg_trading_pair = config.get("COINGECKO_TRADING_PAIR")

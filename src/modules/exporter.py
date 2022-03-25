@@ -1,17 +1,32 @@
 from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
+from pycoingecko import CoinGeckoAPI
 from config.config import load_config
 from client import ArkClient
 from modules.sql import tbwdb
 import os
+import re
 
 
 class tbw_metric_exporter(object):
     def __init__(self):
         self.cfg = load_config()
 
-        self.dposlib = ArkClient(
-            "http://{0}:{1}/api".format(self.cfg.core_api_addr, self.cfg.core_api_port)
-        )
+        try:
+            self.dposlib = ArkClient(
+                "http://{0}:{1}/api".format(
+                    self.cfg.core_api_addr, self.cfg.core_api_port
+                )
+            )
+        except Exception as m:
+            self.dposlib = 0
+            pass
+
+        try:
+            self.cg = CoinGeckoAPI()
+            self.cg.ping()
+        except:
+            self.cg = 0
+            pass
 
         self.collect()
 
@@ -23,7 +38,9 @@ class tbw_metric_exporter(object):
         yield (self._collect_payout())
         yield (self._collect_blockchain())
         yield (self._collect_delegate())
+        yield (self._collect_voters())
         yield (self._collect_network())
+        yield (self._collect_token())
 
     def _collect_config(self):
         g = GaugeMetricFamily("tbw_config", "Tbw config parameters", labels=["param"])
@@ -36,9 +53,7 @@ class tbw_metric_exporter(object):
         return g
 
     def _collect_payout(self):
-        g = GaugeMetricFamily(
-            "tbw_payout", "Current Tbw payout data", labels=["payout"]
-        )
+        g = GaugeMetricFamily("tbw_payout", "Tbw payout data", labels=["payout"])
 
         try:
             g.add_metric(
@@ -54,6 +69,13 @@ class tbw_metric_exporter(object):
                     lambda: 0,
                     lambda: self.tbwdb.pending_delegate_payout().fetchall()[0][0],
                 )[len(self.tbwdb.pending_delegate_payout().fetchall())](),
+            )
+            g.add_metric(
+                ["staged_payout"],
+                (
+                    lambda: 0,
+                    lambda: self.tbwdb.staged_payout().fetchall()[0][0],
+                )[len(self.tbwdb.staged_payout().fetchall())](),
             )
             g.add_metric(
                 ["block_before_payout"],
@@ -77,35 +99,41 @@ class tbw_metric_exporter(object):
                     and self.tbwdb.voters_total_rewards().fetchall()[0][0] != None
                 ](),
             )
-        except:
-            pass
+        except Exception as m:
+            print(m)
+            return g.add_metric(["error"], 1)
 
         return g
 
     def _collect_blockchain(self):
         g = GaugeMetricFamily(
-            "tbw_blockchain", "Current Tbw blockchain data", labels=["blockchain"]
+            "tbw_blockchain", "Blockchain data", labels=["blockchain"]
         )
 
-        self.active_delegates = self.dposlib.node.configuration()["data"]["constants"][
-            "activeDelegates"
-        ]
-        g.add_metric(["height"], self.dposlib.blocks.last()["data"]["height"])
-        g.add_metric(
-            ["active_delegates"],
-            self.active_delegates,
-        )
-        g.add_metric(
-            ["d_cur_round"],
-            self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"]["blocks"][
-                "last"
-            ]["height"]
-            // self.active_delegates,
-        )
-        g.add_metric(
-            ["b_cur_round"],
-            self.dposlib.blocks.last()["data"]["height"] // self.active_delegates,
-        )
+        try:
+            self.active_delegates = self.dposlib.node.configuration()["data"][
+                "constants"
+            ]["activeDelegates"]
+            g.add_metric(["height"], self.dposlib.blocks.last()["data"]["height"])
+            g.add_metric(
+                ["active_delegates"],
+                self.active_delegates,
+            )
+            g.add_metric(
+                ["d_cur_round"],
+                self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"][
+                    "blocks"
+                ]["last"]["height"]
+                // self.active_delegates,
+            )
+            g.add_metric(
+                ["b_cur_round"],
+                self.dposlib.blocks.last()["data"]["height"] // self.active_delegates,
+            )
+        except:
+            g.add_metric(["error"], 1)
+            pass
+
         try:
             g.add_metric(
                 ["t_cur_round"],
@@ -116,49 +144,108 @@ class tbw_metric_exporter(object):
                 )[len(self.tbwdb.last_block_heigh().fetchall())](),
             )
         except:
+            g.add_metric(["error"], 1)
             pass
 
         return g
 
     def _collect_delegate(self):
-        g = GaugeMetricFamily(
-            "tbw_delegate", "Current Tbw delegate data", labels=["delegate"]
-        )
+        g = GaugeMetricFamily("tbw_delegate", "Tbw delegate data", labels=["delegate"])
 
-        g.add_metric(
-            ["delegate_voters_number"],
-            len(self.dposlib.delegates.voters(delegate_id=self.cfg.delegate)["data"]),
-        )
-        g.add_metric(
-            ["delegate_rank"],
-            self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"]["rank"],
-        )
-        g.add_metric(
-            ["delegate_forged_token"],
-            self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"]["forged"][
-                "total"
-            ],
-        )
-        g.add_metric(
-            ["delegate_forged_block"],
-            self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"]["blocks"][
-                "produced"
-            ],
-        )
-        g.add_metric(
-            ["delegate_last_t_forged"],
-            self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"]["blocks"][
-                "last"
-            ]["timestamp"]["unix"],
-        )
+        try:
+            g.add_metric(
+                ["voters_amount"],
+                len(
+                    self.dposlib.delegates.voters(delegate_id=self.cfg.delegate)["data"]
+                ),
+            )
+            g.add_metric(
+                ["rank"],
+                self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"][
+                    "rank"
+                ],
+            )
+            g.add_metric(
+                ["forged_token"],
+                self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"][
+                    "forged"
+                ]["total"],
+            )
+            g.add_metric(
+                ["forged_block"],
+                self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"][
+                    "blocks"
+                ]["produced"],
+            )
+            g.add_metric(
+                ["tstamp_last_forged"],
+                self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"][
+                    "blocks"
+                ]["last"]["timestamp"]["unix"],
+            )
+            g.add_metric(
+                ["wallet_valance"],
+                self.dposlib.wallets.get(
+                    wallet_id=self.dposlib.delegates.get(delegate_id=self.cfg.delegate)[
+                        "data"
+                    ]["address"]
+                )["data"]["balance"],
+            )
+        except:
+            g.add_metric(["error"], 1)
+            pass
+
+        return g
+
+    def _collect_voters(self):
+        g = GaugeMetricFamily("tbw_voters", "Delegate voters list", labels=["voters"])
+
+        try:
+            voters_list = self.dposlib.delegates.voters(delegate_id=self.cfg.delegate)[
+                "data"
+            ]
+            for voter in voters_list:
+                g.add_metric(
+                    [voter["address"]], int(voter["balance"]) / self.cfg.atomic
+                )
+        except:
+            g.add_metric(["error"], 1)
+            pass
 
         return g
 
     def _collect_network(self):
         g = GaugeMetricFamily(
-            "tbw_network", "Current Tbw network data", labels=["network"]
+            "tbw_network", "network data", labels=["network", "version"]
         )
 
-        g.add_metric(["peers_number"], self.dposlib.peers.all()["meta"]["count"])
+        try:
+            g.add_metric(["peers_number"], self.dposlib.peers.all()["meta"]["count"])
+
+            peers_version = dict()
+            peers_data = self.dposlib.peers.all()["data"]
+            for peer in peers_data:
+                if peer["version"] in peers_version.keys():
+                    peers_version[peer["version"]] += 1
+                else:
+                    peers_version[peer["version"]] = 1
+
+            for version in peers_version:
+                g.add_metric(["peer_version", version], peers_version[version])
+        except:
+            g.add_metric(["error"], 1)
+
+        return g
+
+    def _collect_token(self):
+        g = GaugeMetricFamily("tbw_token", "token data", labels=["token"])
+
+        if self.cg:
+            self.token_price = self.cg.get_price(
+                ids=self.cfg.cg_token_id, vs_currencies=self.cfg.cg_trading_pair
+            )[self.cfg.cg_token_id][self.cfg.cg_trading_pair]
+            g.add_metric(["price"], self.token_price)
+        else:
+            return g.add_metric(["error"], 1)
 
         return g

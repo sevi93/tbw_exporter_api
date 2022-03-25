@@ -9,3 +9,7 @@ TBW_CFG_PATH = "${HOME}/core2_tbw/core/config/config"
 # core api
 CORE_API_PORT = "6003"
 CORE_API_ADDR = "127.0.0.1"
+
+# token
+COINGECKO_TOKEN_ID = "swipe"
+COINGECKO_TRADING_PAIR = "usd"
