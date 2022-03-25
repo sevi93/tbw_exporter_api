@@ -259,10 +259,13 @@ class tbw_metric_exporter(object):
             self.transactions = self.tbwdb.processed_transactions().fetchall()
             if len(self.transactions):
                 for transaction in self.transactions:
-                    g.add_metric([transaction[0], transaction[2]], float(transaction[1]) / self.cfg.atomic)
+                    g.add_metric(
+                        [transaction[0], transaction[2]],
+                        float(transaction[1]) / self.cfg.atomic,
+                    )
             else:
-                return g.add_metric(['0', '0'], 0)
+                return g.add_metric(["0", "0"], 0)
         except:
-            return g.add_metric(['error'], 1)
+            return g.add_metric(["error"], 1)
 
         return g
