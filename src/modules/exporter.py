@@ -101,7 +101,8 @@ class tbw_metric_exporter(object):
                 ](),
             )
         except:
-            return g.add_metric(["error"], 1)
+            g.add_metric(["error"], 1)
+            return g
 
         return g
 
@@ -246,7 +247,8 @@ class tbw_metric_exporter(object):
             )[self.cfg.cg_token_id][self.cfg.cg_trading_pair]
             g.add_metric(["price"], self.token_price)
         else:
-            return g.add_metric(["error"], 1)
+            g.add_metric(["error"], 1)
+            return g
 
         return g
 
@@ -264,8 +266,10 @@ class tbw_metric_exporter(object):
                         float(transaction[1]) / self.cfg.atomic,
                     )
             else:
-                return g.add_metric(["0", "0"], 0)
+                g.add_metric(["0", "0"], 1)
+                return g
         except:
-            return g.add_metric(["error"], 1)
+            g.add_metric(["error"], 1)
+            return g
 
         return g
