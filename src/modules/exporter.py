@@ -76,7 +76,10 @@ class tbw_metric_exporter(object):
                 (
                     lambda: 0,
                     lambda: self.tbwdb.staged_payout().fetchall()[0][0],
-                )[len(self.tbwdb.staged_payout().fetchall())](),
+                )[
+                    len(self.tbwdb.staged_payout().fetchall())
+                    and self.tbwdb.staged_payout().fetchall()[0][0] != None
+                ](),
             )
             g.add_metric(
                 ["block_before_payout"],
