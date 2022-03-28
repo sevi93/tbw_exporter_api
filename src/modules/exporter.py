@@ -266,8 +266,7 @@ class tbw_metric_exporter(object):
                         float(transaction[1]) / self.cfg.atomic,
                     )
             else:
-                g.add_metric(["0", "0"], 1)
-                return g
+                g.add_metric(["0", "0"], 0)
         except:
             g.add_metric(["error"], 1)
             return g
