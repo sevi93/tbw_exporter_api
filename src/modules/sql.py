@@ -21,7 +21,7 @@ class tbwdb:
         return self.cursor.execute(f"SELECT sum(u_balance) FROM delegate_rewards")
 
     def staged_payout(self):
-        return self.cursor.execute(f"SELECT sum(payamt) FROM staging")
+        return self.cursor.execute(f"SELECT sum(payamt) FROM staging WHERE processed_at IS NULL")
 
     def processed_transactions(self, last="100"):
         return self.cursor.execute(
