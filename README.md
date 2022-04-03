@@ -10,12 +10,12 @@ Custom TBW prometheus exporter API
 ### Install dependencies
 `pip3 install -r requirements.txt`
 
-### Run
-`pm2 start package.json`
-
 ## Configuration
 ### Copy the example config
 `cp src/config/config.example src/config/config`
+
+### Run
+`pm2 start package.json`
 
 ## Metrics
 
@@ -30,6 +30,7 @@ __**TBW constant configuration parameters**__
 __**TBW payout metrics**__
 - pending voters payout
 - pending delegate payout
+- staged payout
 - number of block before payout
 - total distributed voters rewards
 - total distributed delegate rewards
@@ -48,7 +49,16 @@ __**Delegate metrics**__
 - total forged token
 - total forged block
 - timestamp of last forged block
+- delegate wallet balance
+
+__**Voters metrics**__
+- List of voters with the amount of tokens
 
 __**Network metrics**__
 - number of peers
 
+__**Token metrics**__
+- Token price
+
+__**Delegate transactions metrics**__
+- List of the last 100 payout transactions with address,date,amount
