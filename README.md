@@ -62,3 +62,7 @@ __**Token metrics**__
 
 __**Delegate transactions metrics**__
 - List of the last 100 payout transactions with address,date,amount
+
+## Security
+
+Default example config listens on all IPs addresses, you need to either change the EXPORTER_ADDR value or firewall the EXPORTER_PORT as the exporter displays sensitive datas
