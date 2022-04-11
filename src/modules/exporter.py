@@ -173,12 +173,18 @@ class tbw_metric_exporter(object):
                 "rank"
             ]
             g.add_metric(["rank"], rank)
-            g.add_metric(
-                ["block_reward"],
-                self.dposlib.node.configuration()["data"]["constants"]["dynamicReward"][
-                    "ranks"
-                ][str(rank)],
-            )
+            try:
+                g.add_metric(
+                    ["block_reward"],
+                    self.dposlib.node.configuration()["data"]["constants"][
+                        "dynamicReward"
+                    ]["ranks"][str(rank)],
+                )
+            except:
+                g.add_metric(
+                    ["block_reward"],
+                    self.dposlib.node.configuration()["data"]["constants"]["reward"],
+                )
             g.add_metric(
                 ["forged_token"],
                 self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"][
@@ -302,9 +308,14 @@ class tbw_metric_exporter(object):
             if voter["address"] not in self.cfg.blacklist_addr.split(","):
                 rl_voters_balance += int(voter["balance"])
         rank = self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"]["rank"]
-        block_reward = self.dposlib.node.configuration()["data"]["constants"][
-            "dynamicReward"
-        ]["ranks"][str(rank)]
+        try:
+            block_reward = self.dposlib.node.configuration()["data"]["constants"][
+                "dynamicReward"
+            ]["ranks"][str(rank)]
+        except:
+            block_reward = self.dposlib.node.configuration()["data"]["constants"][
+                "reward"
+            ]
         vshare = block_reward * self.cfg.tbw_voter_share
         for balance in range(0, 20200, 200):
             g.add_metric(
