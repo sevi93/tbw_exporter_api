@@ -42,6 +42,7 @@ class tbw_metric_exporter(object):
         yield (self._collect_network())
         yield (self._collect_token())
         yield (self._collect_transactions())
+        yield (self._collect_reward_calc())
 
     def _collect_config(self):
         g = GaugeMetricFamily("tbw_config", "Tbw config parameters", labels=["param"])
@@ -73,10 +74,7 @@ class tbw_metric_exporter(object):
             )
             g.add_metric(
                 ["staged_payout"],
-                (
-                    lambda: 0,
-                    lambda: self.tbwdb.staged_payout().fetchall()[0][0],
-                )[
+                (lambda: 0, lambda: self.tbwdb.staged_payout().fetchall()[0][0],)[
                     len(self.tbwdb.staged_payout().fetchall())
                     and self.tbwdb.staged_payout().fetchall()[0][0] != None
                 ](),
@@ -157,17 +155,29 @@ class tbw_metric_exporter(object):
         g = GaugeMetricFamily("tbw_delegate", "Tbw delegate data", labels=["delegate"])
 
         try:
+            voters_list = self.dposlib.delegates.voters(delegate_id=self.cfg.delegate)[
+                "data"
+            ]
+            rl_voters_list = []
+            voters_balance = 0
+            rl_voters_balance = 0
+            for voter in voters_list:
+                voters_balance += int(voter["balance"])
+                if voter["address"] not in self.cfg.blacklist_addr.split(","):
+                    rl_voters_list.append(voter)
+                    rl_voters_balance += int(voter["balance"])
+            g.add_metric(["voters_number"], len(rl_voters_list))
+            g.add_metric(["voters_balance"], voters_balance)
+            g.add_metric(["rl_voters_balance"], rl_voters_balance)
+            rank = self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"][
+                "rank"
+            ]
+            g.add_metric(["rank"], rank)
             g.add_metric(
-                ["voters_amount"],
-                len(
-                    self.dposlib.delegates.voters(delegate_id=self.cfg.delegate)["data"]
-                ),
-            )
-            g.add_metric(
-                ["rank"],
-                self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"][
-                    "rank"
-                ],
+                ["block_reward"],
+                self.dposlib.node.configuration()["data"]["constants"]["dynamicReward"][
+                    "ranks"
+                ][str(rank)],
             )
             g.add_metric(
                 ["forged_token"],
@@ -195,7 +205,8 @@ class tbw_metric_exporter(object):
                     ]["address"]
                 )["data"]["balance"],
             )
-        except:
+        except Exception as m:
+            print(m)
             g.add_metric(["error"], 1)
             pass
 
@@ -274,4 +285,51 @@ class tbw_metric_exporter(object):
             g.add_metric(["error"], 1)
             return g
 
+        return g
+
+    def _collect_reward_calc(self):
+        g = GaugeMetricFamily(
+            "tbw_reward_calc",
+            "Tbw reward calc data",
+            labels=["new_vote", "blk_reward", "payout_interval_reward"],
+        )
+
+        voters_list = self.dposlib.delegates.voters(delegate_id=self.cfg.delegate)[
+            "data"
+        ]
+        rl_voters_balance = 0
+        for voter in voters_list:
+            if voter["address"] not in self.cfg.blacklist_addr.split(","):
+                rl_voters_balance += int(voter["balance"])
+        rank = self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"]["rank"]
+        block_reward = self.active_delegates = self.dposlib.node.configuration()[
+            "data"
+        ]["constants"]["dynamicReward"]["ranks"][str(rank)]
+        vshare = block_reward * self.cfg.tbw_voter_share
+        for balance in range(0, 20200, 200):
+            g.add_metric(
+                [
+                    "False",
+                    str(balance / rl_voters_balance * vshare),
+                    str(balance / rl_voters_balance * vshare * self.cfg.tbw_interval),
+                ],
+                balance,
+            )
+            g.add_metric(
+                [
+                    "True",
+                    str(
+                        balance
+                        / (rl_voters_balance + balance * self.cfg.atomic)
+                        * vshare
+                    ),
+                    str(
+                        balance
+                        / (rl_voters_balance + balance * self.cfg.atomic)
+                        * vshare
+                        * self.cfg.tbw_interval
+                    ),
+                ],
+                balance,
+            )
         return g

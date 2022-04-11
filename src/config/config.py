@@ -19,6 +19,7 @@ class load_config:
         )
         self.tbw_interval = int(tbw_config.get("INTERVAL"))
         self.delegate = tbw_config.get("DELEGATE")
+        self.blacklist_addr = tbw_config.get("BLACKLIST_ADDR")
 
     def _load_cfg(self, config):
         self.exporter_addr = config.get("EXPORTER_ADDR")

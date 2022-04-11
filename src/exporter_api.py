@@ -11,4 +11,4 @@ if __name__ == "__main__":
     REGISTRY.register(tbw_metric_exporter())
 
     while True:
-        time.sleep(5)
+        time.sleep(15)
