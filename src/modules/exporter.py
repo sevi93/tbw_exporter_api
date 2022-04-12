@@ -211,8 +211,7 @@ class tbw_metric_exporter(object):
                     ]["address"]
                 )["data"]["balance"],
             )
-        except Exception as m:
-            print(m)
+        except:
             g.add_metric(["error"], 1)
             pass
 
@@ -293,6 +292,19 @@ class tbw_metric_exporter(object):
 
         return g
 
+    def _cal_bl_reward(self, voters_balance, delegates, block_rewards):
+        del_votes = []
+        for delegate in delegates:
+            del_votes.append(int(delegate["votes"]))
+        i = 0
+        sdel_votes = sorted(del_votes, reverse=True)
+        for votes in sdel_votes:
+            if votes <= voters_balance:
+                if sdel_votes.index(votes) > 53:
+                    return 0
+                return block_rewards["ranks"][str(sdel_votes.index(votes) + 1)]
+        return 0
+
     def _collect_reward_calc(self):
         g = GaugeMetricFamily(
             "tbw_reward_calc",
@@ -300,24 +312,31 @@ class tbw_metric_exporter(object):
             labels=["new_vote", "blk_reward", "payout_interval_reward"],
         )
 
+        rl_voters_balance = 0
+        voters_balance = 0
+
         voters_list = self.dposlib.delegates.voters(delegate_id=self.cfg.delegate)[
             "data"
         ]
-        rl_voters_balance = 0
+        delegates = self.dposlib.delegates.all()["data"]
+
         for voter in voters_list:
+            voters_balance += int(voter["balance"])
             if voter["address"] not in self.cfg.blacklist_addr.split(","):
                 rl_voters_balance += int(voter["balance"])
-        rank = self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"]["rank"]
+
         try:
-            block_reward = self.dposlib.node.configuration()["data"]["constants"][
+            block_rewards = self.dposlib.node.configuration()["data"]["constants"][
                 "dynamicReward"
-            ]["ranks"][str(rank)]
+            ]
+            block_reward = self._cal_bl_reward(voters_balance, delegates, block_rewards)
         except:
             block_reward = self.dposlib.node.configuration()["data"]["constants"][
                 "reward"
             ]
+
         vshare = block_reward * self.cfg.tbw_voter_share
-        for balance in range(0, 20200, 200):
+        for balance in range(200, 20200, 200):
             g.add_metric(
                 [
                     "False",
@@ -326,18 +345,22 @@ class tbw_metric_exporter(object):
                 ],
                 balance,
             )
+            vvshare = (
+                self._cal_bl_reward(voters_balance + balance, delegates, block_rewards)
+                * self.cfg.tbw_voter_share
+            )
             g.add_metric(
                 [
                     "True",
                     str(
                         balance
                         / (rl_voters_balance + balance * self.cfg.atomic)
-                        * vshare
+                        * vvshare
                     ),
                     str(
                         balance
                         / (rl_voters_balance + balance * self.cfg.atomic)
-                        * vshare
+                        * vvshare
                         * self.cfg.tbw_interval
                     ),
                 ],
