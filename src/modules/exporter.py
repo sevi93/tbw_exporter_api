@@ -346,7 +346,9 @@ class tbw_metric_exporter(object):
                 balance,
             )
             vvshare = (
-                self._cal_bl_reward(voters_balance + balance, delegates, block_rewards)
+                self._cal_bl_reward(
+                    voters_balance + balance * self.cfg.atomic, delegates, block_rewards
+                )
                 * self.cfg.tbw_voter_share
             )
             g.add_metric(
