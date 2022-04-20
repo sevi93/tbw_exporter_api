@@ -301,10 +301,10 @@ class tbw_metric_exporter(object):
         for votes in sdel_votes:
             if sdel_votes.index(votes) > 53:
                 return 0
-            if votes == voters_balance:
+            if votes <= voters_balance:
+                if sdel_votes.index(votes) + 1 > 53:
+                    return 0
                 return block_rewards["ranks"][str(sdel_votes.index(votes) + 1)]
-            elif votes < voters_balance:
-                return block_rewards["ranks"][str(sdel_votes.index(votes) + 2)]
         return 0
 
     def _collect_reward_calc(self):
