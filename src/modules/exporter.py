@@ -17,7 +17,7 @@ class tbw_metric_exporter(object):
                     self.cfg.core_api_addr, self.cfg.core_api_port
                 )
             )
-        except Exception as m:
+        except:
             self.dposlib = 0
             pass
 
@@ -121,11 +121,12 @@ class tbw_metric_exporter(object):
                 ["active_delegates"],
                 self.active_delegates,
             )
+            lastForgedBlockId = self.dposlib.delegates.get(
+                delegate_id=self.cfg.delegate
+            )["data"]["blocks"]["last"]
             g.add_metric(
                 ["d_cur_round"],
-                self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"][
-                    "blocks"
-                ]["last"]["height"]
+                self.dposlib.blocks.get(block_id=lastForgedBlockId)["data"]["height"]
                 // self.active_delegates,
             )
             g.add_metric(
@@ -197,11 +198,14 @@ class tbw_metric_exporter(object):
                     "blocks"
                 ]["produced"],
             )
+            lastForgedBlockId = self.dposlib.delegates.get(
+                delegate_id=self.cfg.delegate
+            )["data"]["blocks"]["last"]
             g.add_metric(
                 ["tstamp_last_forged"],
-                self.dposlib.delegates.get(delegate_id=self.cfg.delegate)["data"][
-                    "blocks"
-                ]["last"]["timestamp"]["unix"],
+                self.dposlib.blocks.get(block_id=lastForgedBlockId)["data"][
+                    "timestamp"
+                ]["unix"],
             )
             g.add_metric(
                 ["wallet_valance"],
