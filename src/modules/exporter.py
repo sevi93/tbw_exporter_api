@@ -299,7 +299,7 @@ class tbw_metric_exporter(object):
     def _cal_bl_reward(self, voters_balance, delegates, block_rewards):
         del_votes = []
         for delegate in delegates:
-            del_votes.append(int(delegate["votes"]))
+            del_votes.append(int(delegate["votesReceived"]["votes"]))
         i = 0
         sdel_votes = sorted(del_votes, reverse=True)
         for votes in sdel_votes:
