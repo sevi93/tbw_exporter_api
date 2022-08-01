@@ -1,7 +1,7 @@
 from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
 from pycoingecko import CoinGeckoAPI
 from config.config import load_config
-from client import ArkClient
+from solar_client.client import SolarClient
 from modules.sql import tbwdb
 import os
 import re
