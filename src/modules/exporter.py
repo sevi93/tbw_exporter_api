@@ -12,7 +12,7 @@ class tbw_metric_exporter(object):
         self.cfg = load_config()
 
         try:
-            self.dposlib = ArkClient(
+            self.dposlib = SolarClient(
                 "http://{0}:{1}/api".format(
                     self.cfg.core_api_addr, self.cfg.core_api_port
                 )
