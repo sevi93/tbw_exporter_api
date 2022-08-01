@@ -265,10 +265,14 @@ class tbw_metric_exporter(object):
         g = GaugeMetricFamily("tbw_token", "token data", labels=["token"])
 
         if self.cg:
-            self.token_price = self.cg.get_price(
-                ids=self.cfg.cg_token_id, vs_currencies=self.cfg.cg_trading_pair
-            )[self.cfg.cg_token_id][self.cfg.cg_trading_pair]
-            g.add_metric(["price"], self.token_price)
+            try:
+                self.token_price = self.cg.get_price(
+                    ids=self.cfg.cg_token_id, vs_currencies=self.cfg.cg_trading_pair
+                )[self.cfg.cg_token_id][self.cfg.cg_trading_pair]
+                g.add_metric(["price"], self.token_price)
+            except:
+                g.add_metric(["error"], 1)
+                return g
         else:
             g.add_metric(["error"], 1)
             return g
